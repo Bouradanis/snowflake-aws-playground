@@ -20,3 +20,5 @@ set auto_suspend=120;
 
 show warehouses;
 
+drop warehouse warehouse_one;
+
