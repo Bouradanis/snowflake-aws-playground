@@ -208,3 +208,6 @@ __marimo__/
 
 #pycharm .idea files
 .idea/
+
+# files
+*_ds.csv
