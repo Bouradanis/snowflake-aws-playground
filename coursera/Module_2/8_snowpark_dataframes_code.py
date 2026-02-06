@@ -1,3 +1,5 @@
+#as of 06/02/2025 , commands like df.show() only return a display in the snowflake notebook worksheet
+
 # import what you need
 import snowflake.snowpark as snowpark
 
