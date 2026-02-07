@@ -87,7 +87,7 @@ test = snowpark_df.withColumn('NEIGHBORHOOD2', snowpark_df.neighborhood - 1).dro
 test.show()
 
 # now use scikit-learn's LabelEncoder -- a more general solution -- through Snowpark ML
-le = LabelEncoder(input_cols=['NEIGHBORHOOD'], output_cols=['NEIGHBORHOOD2'], drop_input_cols=True)
+le = preprocessing.LabelEncoder(input_cols=['NEIGHBORHOOD'], output_cols=['NEIGHBORHOOD2'], drop_input_cols=True)
 
 # apply the LabelEncoder
 fitted = le.fit(snowpark_df.select("NEIGHBORHOOD"))
