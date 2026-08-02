@@ -211,3 +211,7 @@ __marimo__/
 
 # files
 *_ds.csv
+
+# EY Open Science Data Challenge data (KAN-28) - large binaries, not Cortex Analyst work
+Snowflake Notebooks Package/
+Snowflake Notebooks Package.zip
