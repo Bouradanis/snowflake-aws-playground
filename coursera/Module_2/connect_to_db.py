@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 import os
 import pandas as pd
 
-load_dotenv('C:\Git Repos\ey-data-challenge-2026\.env')
+#load_dotenv('C:\Git_Repos\ey-data-challenge-2026\.env')  # for Windows
+load_dotenv('/mnt/c/Git_Repos/ey-data-challenge-2026/.env')  # for Ubuntu env
 
 
 def main(session: snowpark.Session):
@@ -13,6 +14,7 @@ def main(session: snowpark.Session):
 
     df_pandas = df_table.to_pandas()
     df_pandas.to_csv("menu_data_ds.csv", index=False)
+    print(df_pandas.head())
 
     return df_table
 
