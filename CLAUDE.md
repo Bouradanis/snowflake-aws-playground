@@ -99,8 +99,8 @@ leftover `ey_challenge` env from the EY challenge. Core packages: `snowflake-sno
 
 ## Snowflake connection pattern
 
-Credentials come from `.env` (gitignored — `ACCOUNT`, `USER`, `ACCOUNT_PASSWORD`).
-The established pattern in this repo uses a Snowpark `Session`:
+Credentials come from `.env` (gitignored — `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`,
+`SNOWFLAKE_PASSWORD`). The established pattern in this repo uses a Snowpark `Session`:
 
 ```python
 import os
@@ -110,9 +110,9 @@ from snowflake.snowpark import Session
 load_dotenv()  # resolve the repo-root .env explicitly if cwd differs
 
 connection_parameters = {
-    "account":   os.environ["ACCOUNT"],
-    "user":      os.environ["USER"],
-    "password":  os.environ["ACCOUNT_PASSWORD"],
+    "account":   os.environ["SNOWFLAKE_ACCOUNT"],
+    "user":      os.environ["SNOWFLAKE_USER"],
+    "password":  os.environ["SNOWFLAKE_PASSWORD"],
     "warehouse": "compute_wh",
     "database":  "TASTY_BYTES",
     "schema":    "RAW_POS",
@@ -130,11 +130,19 @@ binding constraint on this project.
 
 Do NOT hardcode credentials. Do NOT commit `.env`.
 
-**Known issue:** `coursera/Module_2/connect_to_db.py` and
-`coursera/Module_3/3_snowpark_ml_modeling_pycharm_nb.ipynb` still load `.env` from the
-pre-rename absolute path `/mnt/c/Git_Repos/ey-data-challenge-2026/.env`, which no longer
-exists. Prefer resolving `.env` relative to the file (`Path(__file__).parent`) over
-another absolute path.
+**Why the `SNOWFLAKE_` prefix, not bare `ACCOUNT`/`USER`/`PASSWORD`:** `USER` is a
+reserved OS environment variable — Unix/WSL/macOS all set it automatically to the
+system login. `python-dotenv`'s `load_dotenv()` defaults to `override=False`, so a
+bare `USER` key in `.env` was silently shadowed by the OS value and never actually
+loaded, producing a confusing "incorrect username or password" from Snowflake with a
+100% correct password (root-caused during SNOW-3). `ACCOUNT`/`PASSWORD` weren't
+actually colliding with anything, but got the same prefix for consistency and to
+close off the same class of bug happening again with some other reserved name.
+
+Both `coursera/Module_2/connect_to_db.py` and
+`coursera/Module_3/3_snowpark_ml_modeling_pycharm_nb.ipynb` load `.env` correctly —
+the former resolves it relative to `__file__`, the notebook uses `find_dotenv()`
+since notebooks have no `__file__` to anchor on.
 
 ---
 
