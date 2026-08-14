@@ -69,9 +69,19 @@ Snowpipe), not a second LLM provider; Bedrock and SageMaker are explicitly out o
 (Cortex covers managed inference, Snowpark ML covers training).
 
 Still open, decide with hands on the product rather than up front: the semantic model
-design, whether an API layer (Lambda + API Gateway) is needed at all, and the front end
-(Streamlit in Snowflake first — note it is **not** publicly shareable, viewers need a
-Snowflake login; React on S3+CloudFront is a stretch goal).
+design, and whether an API layer (Lambda + API Gateway) is needed at all.
+
+**Front end — resolved (SNOW-4):** Streamlit in Snowflake was tried first as planned, but
+its Container Runtime (needed for real `langgraph`/`sqlglot`, which aren't in Snowflake's
+Anaconda channel) requires an External Access Integration, and trial accounts hard-block
+EAI creation (`509009` error, confirmed live, not a config/quota/region issue). Verified
+via a live spike (compute pool created and cleaned up, see Confluence space `SN`, SNOW-4).
+Pivoted to a **standalone Streamlit app** ("Snowstrider") hosted off-Snowflake (Streamlit
+Community Cloud), connecting back to Snowflake via a per-session Snowpark `Session` opened
+with credentials the user enters in the app itself — reuses Snowflake's own login/
+`CURRENT_USER()` for identity with zero custom auth code, and gets full pip freedom for
+`langgraph`. React on S3+CloudFront remains a stretch goal, now less likely to be needed
+since Snowstrider already satisfies the front-end requirement.
 
 ---
 

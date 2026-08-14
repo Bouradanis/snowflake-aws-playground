@@ -216,3 +216,6 @@ __marimo__/
 Snowflake Notebooks Package/
 Snowflake Notebooks Package.zip
 /olist/olist_dataset/
+
+# Playwright MCP trace/log output (SNOW-4 UI verification) - tooling noise, not a deliverable
+.playwright-mcp/
