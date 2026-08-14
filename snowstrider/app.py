@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 
+import pandas as pd
 import streamlit as st
 from snowflake.snowpark.exceptions import SnowparkSQLException
 
@@ -26,6 +27,7 @@ from charts.render import render_chart
 from graph.build_graph import build_graph
 from graph.nodes.execute_sql import get_result
 from graph.schema_catalog import format_schema_context
+from plot_chat import PlotChatError, ask_about_result
 
 from snowflake_conn import get_anthropic_client, get_session
 
@@ -154,8 +156,17 @@ def _build_initial_state(question: str) -> dict:
     }
 
 
-def _render_result(final_state: dict) -> None:
-    """Render one final graph state: error banner, or the Chart/Raw Data/SQL Query tabs."""
+def _render_result(final_state: dict, entry: dict, key_prefix: str) -> None:
+    """Render one final graph state: error banner, or the Chart/Raw Data/SQL Query tabs
+    plus the per-result "ask about this result" chat panel.
+
+    `entry` is the `history` dict this result belongs to (holding `question`,
+    `final_state`, and this result's `plot_chat` thread) -- needed alongside
+    `final_state` so the chat panel can persist its thread on the right entry.
+    `key_prefix` gives Streamlit widget keys uniqueness across the "latest
+    answer" render and each "previous questions" render in the expander loop,
+    since this function is called once per history entry.
+    """
     if final_state.get("final_error"):
         st.error(f"Couldn't answer that: {final_state['final_error']}")
         if final_state.get("sql_candidate"):
@@ -198,6 +209,73 @@ def _render_result(final_state: dict) -> None:
 
     st.caption(f"{final_state.get('attempt_count', 0)} SQL generation attempt(s) made for this question.")
 
+    if df is not None:
+        _render_plot_chat(final_state, entry, df, key_prefix)
+
+
+def _escape_markdown_math(text: str) -> str:
+    """Escape `$` so Streamlit's markdown renderer doesn't treat dollar amounts as LaTeX.
+
+    `st.markdown`/`st.write` interpret `$...$` as inline math (KaTeX) by default.
+    Plot-chat responses are financial commentary and routinely contain multiple
+    dollar figures per message (e.g. "$137K", "$1.17M") -- left unescaped, pairs
+    of `$` get parsed as math delimiters and mangle the surrounding text instead
+    of rendering it. Escaping preserves the LLM's other markdown (bold, bullets,
+    headers) while making `$` display literally.
+    """
+    return text.replace("$", r"\$")
+
+
+def _render_plot_chat(final_state: dict, entry: dict, df: pd.DataFrame, key_prefix: str) -> None:
+    """Render the "Ask about this result" panel: a per-result chat thread.
+
+    Purely interpretive -- never re-runs SQL, never touches Snowflake, never
+    invokes the LangGraph graph. Distinct surface from the "Ask a question
+    about the OLIST dataset" form, which always triggers a fresh graph run.
+    """
+    entry.setdefault("plot_chat", [])
+    plot_chat = entry["plot_chat"]
+
+    st.divider()
+    st.subheader("Ask about this result")
+    st.caption(
+        "Ask interpretive questions about the data or chart above (e.g. \"see any trends?\") "
+        "-- this does not run new SQL, it only reasons over what's already shown."
+    )
+
+    for message in plot_chat:
+        with st.chat_message(message["role"]):
+            st.write(_escape_markdown_math(message["content"]))
+
+    with st.form(key=f"{key_prefix}_plot_chat_form", clear_on_submit=True):
+        follow_up = st.text_input("Ask about this result", label_visibility="collapsed")
+        submitted = st.form_submit_button("Send")
+
+    if submitted and follow_up.strip():
+        result_context = {
+            "question": entry.get("question"),
+            "sql": final_state.get("sql_candidate"),
+            "chart_spec": final_state.get("chart_spec"),
+            "df": df,
+        }
+        history_before = list(plot_chat)
+        plot_chat.append({"role": "user", "content": follow_up.strip()})
+        try:
+            with st.spinner("Thinking..."):
+                reply = ask_about_result(
+                    st.session_state["anthropic_client"], result_context, history_before, follow_up.strip()
+                )
+        except PlotChatError as exc:
+            plot_chat.append({"role": "assistant", "content": f"Sorry, something went wrong: {exc}"})
+        else:
+            plot_chat.append({"role": "assistant", "content": reply})
+        # No explicit st.rerun() -- the form submission already triggers
+        # Streamlit's natural rerun, which redraws the thread above with the
+        # newly appended messages.
+
+    if plot_chat:
+        st.caption(f"{len(plot_chat)} follow-up message(s) about this result.")
+
 
 def _render_app() -> None:
     """Render the logged-in app: question form, latest result, and session scrollback."""
@@ -230,13 +308,13 @@ def _render_app() -> None:
         st.subheader("Latest answer")
         latest = history[-1]
         st.markdown(f"**Q:** {latest['question']}")
-        _render_result(latest["final_state"])
+        _render_result(latest["final_state"], latest, key_prefix=f"latest_{len(history) - 1}")
 
         if len(history) > 1:
             with st.expander(f"Previous questions this session ({len(history) - 1})"):
-                for entry in reversed(history[:-1]):
+                for idx, entry in reversed(list(enumerate(history[:-1]))):
                     st.markdown(f"**Q:** {entry['question']}")
-                    _render_result(entry["final_state"])
+                    _render_result(entry["final_state"], entry, key_prefix=f"prev_{idx}")
                     st.divider()
 
 
