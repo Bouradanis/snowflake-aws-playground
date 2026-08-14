@@ -269,9 +269,15 @@ def _render_plot_chat(final_state: dict, entry: dict, df: pd.DataFrame, key_pref
             plot_chat.append({"role": "assistant", "content": f"Sorry, something went wrong: {exc}"})
         else:
             plot_chat.append({"role": "assistant", "content": reply})
-        # No explicit st.rerun() -- the form submission already triggers
-        # Streamlit's natural rerun, which redraws the thread above with the
-        # newly appended messages.
+        # Explicit rerun needed: the `for message in plot_chat` loop that
+        # draws the thread runs *before* this form-handling code, earlier in
+        # the same script pass, so it already rendered the pre-append state
+        # by the time we get here. Without forcing a fresh pass, the new
+        # exchange is stored in session_state but stays invisible until some
+        # later, unrelated interaction triggers the next rerun (confirmed
+        # live -- SNOW-5 bug report: single Enter/click appended the message
+        # but showed nothing until an extra submission).
+        st.rerun()
 
     if plot_chat:
         st.caption(f"{len(plot_chat)} follow-up message(s) about this result.")
