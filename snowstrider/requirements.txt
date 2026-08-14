@@ -2,6 +2,7 @@ langgraph>=0.2,<0.3
 anthropic>=0.120
 sqlglot>=25
 pandas
+python-dateutil
 plotly
 streamlit
 snowflake-snowpark-python
