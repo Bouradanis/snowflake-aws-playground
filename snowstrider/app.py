@@ -27,7 +27,7 @@ import streamlit as st
 from snowflake.snowpark.exceptions import SnowparkSQLException
 
 from graph.build_graph import build_graph
-from pages_ import chat, dashboards
+from pages_ import chat, dashboards, fulfillment
 from snowflake_conn import get_anthropic_client, get_session
 
 logging.basicConfig(level=logging.INFO)
@@ -151,7 +151,10 @@ def _render_app() -> None:
     dashboards_page = st.Page(
         dashboards.render_page, title="Dashboards", icon=":material/bar_chart:", url_path="dashboards"
     )
-    pg = st.navigation([chat_page, dashboards_page])
+    fulfillment_page = st.Page(
+        fulfillment.render_page, title="Fulfillment", icon=":material/local_shipping:", url_path="fulfillment"
+    )
+    pg = st.navigation([chat_page, dashboards_page, fulfillment_page])
     pg.run()
 
 

@@ -287,22 +287,26 @@ def build_trend_chart(merged: pd.DataFrame, title: str) -> go.Figure:
     produced by `align_weekly_trend`. Always exactly two traces so both show
     up in the legend (Plotly's default click-to-toggle needs no extra code).
     """
+    # Comma thousands separators on both the tick labels and the hover value
+    # -- Plotly's bare default has neither (e.g. "20000"), which is hard to
+    # scan at a glance for the larger measures (dollar_sales, volume_sales_kg).
+    hover_template = f"Week %{{x}}<br>{title}: %{{y:,.2f}}<extra></extra>"
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
             x=merged["iso_week"], y=merged["current"], mode="lines+markers",
-            name="This Year", line=dict(color=_CURRENT_YEAR_COLOR),
+            name="This Year", line=dict(color=_CURRENT_YEAR_COLOR), hovertemplate=hover_template,
         )
     )
     fig.add_trace(
         go.Scatter(
             x=merged["iso_week"], y=merged["year_ago"], mode="lines+markers",
-            name="Year Ago", line=dict(color=_YEAR_AGO_COLOR),
+            name="Year Ago", line=dict(color=_YEAR_AGO_COLOR), hovertemplate=hover_template,
         )
     )
     fig.update_layout(
         template="plotly_dark", title=title, xaxis_title="ISO Week", yaxis_title=title,
-        margin=dict(t=60, b=40),
+        yaxis_tickformat=",", margin=dict(t=60, b=40),
     )
     return fig
 
