@@ -20,7 +20,7 @@ import streamlit as st
 
 from charts.render import render_chart
 from graph.nodes.execute_sql import get_result
-from graph.schema_catalog import format_schema_context
+from graph.schema_catalog import format_business_glossary, format_schema_context
 from plot_chat import PlotChatError, ask_about_result
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,8 @@ def _build_initial_state(question: str) -> dict:
     """
     return {
         "question": question,
-        "schema_context": format_schema_context(),
+        "schema_context": f"{format_schema_context()}\n\n{format_business_glossary()}",
+        "analytical_brief": None,
         "sql_candidate": None,
         "validation_error": None,
         "execution_error": None,

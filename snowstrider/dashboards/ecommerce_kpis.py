@@ -55,7 +55,8 @@ JOIN OLIST.RAW.PRODUCTS p ON oi.product_id = p.product_id
 JOIN OLIST.RAW.PRODUCT_CATEGORY_NAME_TRANSLATION pt
     ON p.product_category_name = pt.product_category_name
 JOIN OLIST.RAW.SELLERS s ON oi.seller_id = s.seller_id
-WHERE o.order_approved_at >= ? AND o.order_approved_at < ?"""
+WHERE o.order_approved_at >= ? AND o.order_approved_at < ?
+  AND o.order_status NOT IN ('canceled', 'unavailable')"""
 
 _LIST_SELLER_STATES_SQL = (
     "SELECT DISTINCT seller_state FROM OLIST.RAW.SELLERS "
@@ -247,10 +248,12 @@ def category_totals(
 ) -> pd.DataFrame:
     """Unit/Volume/Dollar sales per product category for `[start_date, end_date)`.
 
-    No `order_status` filter is applied -- every approved order counts,
-    regardless of downstream fulfillment status. This is an explicit scope
-    decision (matches the sibling `oci-ai-playground` Olist Copilot
-    comparison baseline), not an oversight.
+    Excludes `order_status` values `'canceled'` and `'unavailable'` -- those
+    never became real transactions, so counting their `price`/weight as
+    sales would overstate revenue. Every other status (`delivered`,
+    `shipped`, `invoiced`, `processing`, `created`, `approved`) counts,
+    including orders still in flight, since "not yet delivered" is
+    legitimate pipeline volume, not noise.
 
     Dates and seller states are passed as Snowpark qmark (`?`) bind
     parameters, never f-string-interpolated into the SQL text.

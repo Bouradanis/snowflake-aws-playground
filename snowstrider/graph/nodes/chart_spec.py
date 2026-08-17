@@ -54,8 +54,13 @@ _SYSTEM_PROMPT = (
     "You are choosing how to visualize a SQL query result for the OLIST e-commerce "
     "dataset. Given the user's question, the executed SQL, and the result's columns/ "
     "inferred dtypes/sample rows, propose the single best chart. Only ever reference "
-    "column names that actually appear in result_columns. Call the chart_spec tool "
-    "with your proposal."
+    "column names that actually appear in result_columns. "
+    "The chart title is read by non-technical business stakeholders (Commercial, "
+    "Operations, Supply Chain, Finance), not just the person who asked the question -- "
+    "write it in plain language. Never use an unexplained abbreviation (write "
+    "'Year-over-Year', not 'YoY'; 'Moving Annual Total', not 'MAT'; 'Year-to-Date', "
+    "not 'YTD') even if the question or business glossary used the short form. "
+    "Call the chart_spec tool with your proposal."
 )
 
 _FALLBACK_SPEC = {"chart_type": "none", "x": "", "y": "", "color": "", "agg": "none", "title": ""}

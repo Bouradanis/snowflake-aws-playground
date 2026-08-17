@@ -14,6 +14,7 @@ class SnowstriderState(TypedDict):
 
     question: str
     schema_context: str
+    analytical_brief: Optional[str]
     sql_candidate: Optional[str]
     validation_error: Optional[str]
     execution_error: Optional[str]

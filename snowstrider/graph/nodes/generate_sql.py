@@ -53,10 +53,18 @@ def make_generate_sql_node(client: anthropic.Anthropic) -> Callable[[Snowstrider
         """Call Claude to produce a SQL candidate; increments `attempt_count`."""
         system_prompt = _SYSTEM_PROMPT_TEMPLATE.format(schema_context=state["schema_context"])
 
-        user_content = state["question"]
+        # Prefer the `translate_question` node's analytical brief -- a
+        # precise, SQL-ready restatement of the question with every business
+        # term (MAT/YTD/YA/etc.) resolved and every part of a compound ask
+        # spelled out -- over the raw question. Falls back to the raw
+        # question if translation is unavailable (e.g. its own API call
+        # failed and it degraded to passing the question through unchanged,
+        # or this node is exercised directly without that node having run).
+        base_content = state.get("analytical_brief") or state["question"]
+        user_content = base_content
         feedback = _retry_feedback(state)
         if feedback:
-            user_content = f"{state['question']}\n\n{feedback}"
+            user_content = f"{base_content}\n\n{feedback}"
 
         try:
             message = client.messages.create(

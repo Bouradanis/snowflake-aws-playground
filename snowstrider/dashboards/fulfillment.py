@@ -41,7 +41,8 @@ _FROM_JOIN_WHERE_SQL = """\
 FROM OLIST.RAW.ORDER_ITEMS oi
 JOIN OLIST.RAW.ORDERS o ON oi.order_id = o.order_id
 JOIN OLIST.RAW.SELLERS s ON oi.seller_id = s.seller_id
-WHERE o.order_approved_at >= ? AND o.order_approved_at < ?"""
+WHERE o.order_approved_at >= ? AND o.order_approved_at < ?
+  AND o.order_status NOT IN ('canceled', 'unavailable')"""
 
 # Conditional aggregates shared by fulfillment_totals, seller_fulfillment_ranking,
 # and weekly_on_time_trend -- raw counts/sums, not pre-divided ratios, so the
@@ -147,7 +148,10 @@ def fulfillment_totals(
     count toward `on_time_rate`/`avg_lead_time_days` -- undelivered/in-transit
     orders are excluded from those two measures (not treated as late), but
     still count toward `item_count` and `freight_ratio` (freight is charged
-    regardless of delivery status).
+    regardless of delivery status). `order_status` values `'canceled'` and
+    `'unavailable'` are excluded entirely (see `_FROM_JOIN_WHERE_SQL`) -- those
+    never became real shipments, so they shouldn't count toward item volume
+    or freight cost either.
 
     Args:
         session: an open Snowpark `Session`.

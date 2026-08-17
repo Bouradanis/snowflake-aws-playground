@@ -1,6 +1,6 @@
 """Wires the Snowstrider node functions into a compiled langgraph StateGraph.
 
-    generate_sql -> validate_sql
+    translate_question -> generate_sql -> validate_sql
       valid                    -> execute_sql
       invalid, attempts remain -> generate_sql
       invalid, exhausted       -> give_up -> END
@@ -35,11 +35,13 @@ from graph.nodes.chart_spec import make_chart_spec_node
 from graph.nodes.execute_sql import make_execute_sql_node
 from graph.nodes.generate_sql import make_generate_sql_node
 from graph.nodes.self_check import make_self_check_node
+from graph.nodes.translate_question import make_translate_question_node
 from graph.nodes.validate_sql import validate_sql
 from graph.state import SnowstriderState
 
 logger = logging.getLogger(__name__)
 
+NODE_TRANSLATE_QUESTION = "translate_question"
 NODE_GENERATE_SQL = "generate_sql"
 NODE_VALIDATE_SQL = "validate_sql"
 NODE_EXECUTE_SQL = "execute_sql"
@@ -111,6 +113,7 @@ def build_graph(session: Session, anthropic_client: anthropic.Anthropic) -> Comp
     """
     graph = StateGraph(SnowstriderState)
 
+    graph.add_node(NODE_TRANSLATE_QUESTION, make_translate_question_node(anthropic_client))
     graph.add_node(NODE_GENERATE_SQL, make_generate_sql_node(anthropic_client))
     graph.add_node(NODE_VALIDATE_SQL, validate_sql)
     graph.add_node(NODE_EXECUTE_SQL, make_execute_sql_node(session))
@@ -119,7 +122,8 @@ def build_graph(session: Session, anthropic_client: anthropic.Anthropic) -> Comp
     graph.add_node(NODE_GIVE_UP, _give_up_node)
     graph.add_node(NODE_MARK_LOW_CONFIDENCE, _mark_low_confidence_node)
 
-    graph.set_entry_point(NODE_GENERATE_SQL)
+    graph.set_entry_point(NODE_TRANSLATE_QUESTION)
+    graph.add_edge(NODE_TRANSLATE_QUESTION, NODE_GENERATE_SQL)
     graph.add_edge(NODE_GENERATE_SQL, NODE_VALIDATE_SQL)
 
     graph.add_conditional_edges(NODE_VALIDATE_SQL, route_after_validate)
