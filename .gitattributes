@@ -1,0 +1,26 @@
+# Normalize text files to LF in both the repository and the working tree.
+#
+# Without this, editors on Windows rewrite files with CRLF endings and every
+# file shows as fully modified with zero real content change — 42 files,
+# 3172 insertions / 3172 deletions, and `git diff -w` completely empty.
+# Pinning eol=lf keeps the checkout deterministic regardless of core.autocrlf,
+# which matters here because the same files are edited from PyCharm on Windows
+# and from WSL.
+* text=auto eol=lf
+
+*.sql   text eol=lf
+*.py    text eol=lf
+*.md    text eol=lf
+*.json  text eol=lf
+*.ipynb text eol=lf
+*.csv   text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+
+# Binary — never transform
+*.zip     binary
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.joblib  binary
+*.parquet binary

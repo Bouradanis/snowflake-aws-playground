@@ -3,9 +3,9 @@ from snowflake.snowpark import Session
 from dotenv import load_dotenv
 import os
 import pandas as pd
+from pathlib import Path
 
-#load_dotenv('C:\Git_Repos\ey-data-challenge-2026\.env')  # for Windows
-load_dotenv('/mnt/c/Git_Repos/ey-data-challenge-2026/.env')  # for Ubuntu env
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
 def main(session: snowpark.Session):
@@ -21,9 +21,9 @@ def main(session: snowpark.Session):
 
 if __name__ == "__main__":
     connection_parameters = {
-        "account": os.environ.get("ACCOUNT"),
-        "user": os.environ.get("USER"),
-        "password": os.environ.get("ACCOUNT_PASSWORD"),
+        "account": os.environ.get("SNOWFLAKE_ACCOUNT"),
+        "user": os.environ.get("SNOWFLAKE_USER"),
+        "password": os.environ.get("SNOWFLAKE_PASSWORD"),
         "warehouse": "compute_wh",
         "database": "TASTY_BYTES",
         "schema": "RAW_POS"
