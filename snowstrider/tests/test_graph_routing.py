@@ -7,12 +7,16 @@ Anthropic clients needed.
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 from graph.build_graph import (
     NODE_CHART_SPEC,
     NODE_EXECUTE_SQL,
     NODE_GENERATE_SQL,
     NODE_GIVE_UP,
     NODE_MARK_LOW_CONFIDENCE,
+    NODE_TRANSLATE_QUESTION,
+    build_graph,
     route_after_execute,
     route_after_self_check,
     route_after_validate,
@@ -24,6 +28,7 @@ def _base_state(**overrides) -> SnowstriderState:
     state: SnowstriderState = {
         "question": "How many orders were delivered?",
         "schema_context": "irrelevant for routing tests",
+        "analytical_brief": None,
         "sql_candidate": "SELECT 1",
         "validation_error": None,
         "execution_error": None,
@@ -103,3 +108,17 @@ def test_max_attempts_is_a_total_budget_shared_across_all_three_branch_points() 
     assert route_after_validate({**exhausted, "validation_error": "x"}) == NODE_GIVE_UP
     assert route_after_execute({**exhausted, "execution_error": "x"}) == NODE_GIVE_UP
     assert route_after_self_check({**exhausted, "self_check_passed": False}) == NODE_MARK_LOW_CONFIDENCE
+
+
+# ── build_graph wiring ────────────────────────────────────────────────────────
+
+
+def test_translate_question_is_the_graph_entry_point() -> None:
+    # translate_question (the e-commerce BI specialist) must run before any
+    # SQL is generated -- session/client are never called at build time, so
+    # MagicMocks are safe here.
+    compiled = build_graph(session=MagicMock(), anthropic_client=MagicMock())
+    edges = {(e.source, e.target) for e in compiled.get_graph().edges}
+
+    assert ("__start__", NODE_TRANSLATE_QUESTION) in edges
+    assert (NODE_TRANSLATE_QUESTION, NODE_GENERATE_SQL) in edges
