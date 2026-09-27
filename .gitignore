@@ -220,3 +220,10 @@ Snowflake Notebooks Package.zip
 # Playwright MCP trace/log output (SNOW-4 UI verification) - tooling noise, not a deliverable
 .playwright-mcp/
 /screenshots/
+
+#Local projects
+intdes/
+
+# Streamlit local secrets - never tracked (config.toml is fine, secrets.toml is not)
+.streamlit/secrets.toml
+
